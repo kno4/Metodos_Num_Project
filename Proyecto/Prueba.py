@@ -1,20 +1,16 @@
 import tkinter as tk
 from tkinter import messagebox
-import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr
-import numpy as np
 
-def funcion_evaluada(funcion, x_valores):
-    x = sp.symbols('x')
-    f_lambdified = sp.lambdify(x, funcion, 'numpy')
-    return f_lambdified(x_valores)
+def f_evaluada(funcion, x_valores):
+    # Evalúa la función para cada valor de x en la lista x_valores
+    return [eval(funcion, {"x": x}) for x in x_valores]
 
 def calcular_error(exacto, aproximado):
     return abs(exacto - aproximado)
 
 def metodo_trapezoidal(funcion, a, b, n):
-    x = np.linspace(a, b, n + 1)
-    fx = funcion_evaluada(funcion, x)
+    x = [a + i * (b - a) / n for i in range(n + 1)]
+    fx = f_evaluada(funcion, x)
     h = (b - a) / n
     resultado = (h / 2) * (fx[0] + 2 * sum(fx[1:n]) + fx[n])
     return resultado
@@ -23,8 +19,8 @@ def metodo_simpson_13(funcion, a, b, n):
     if n % 2 != 0:
         messagebox.showerror("Error", "Para Simpson 1/3, n debe ser par.")
         return None
-    x = np.linspace(a, b, n + 1)
-    fx = funcion_evaluada(funcion, x)
+    x = [a + i * (b - a) / n for i in range(n + 1)]
+    fx = f_evaluada(funcion, x)
     h = (b - a) / n
     resultado = (h / 3) * (fx[0] + 4 * sum(fx[1:n:2]) + 2 * sum(fx[2:n-1:2]) + fx[n])
     return resultado
@@ -33,21 +29,15 @@ def metodo_simpson_38(funcion, a, b, n):
     if n % 3 != 0:
         messagebox.showerror("Error", "Para Simpson 3/8, n debe ser múltiplo de 3.")
         return None
-    x = np.linspace(a, b, n + 1)
-    fx = funcion_evaluada(funcion, x)
+    x = [a + i * (b - a) / n for i in range(n + 1)]
+    fx = f_evaluada(funcion, x)
     h = (b - a) / n
     resultado = (3 * h / 8) * (fx[0] + 3 * sum(fx[1:n:3] + fx[2:n:3]) + 2 * sum(fx[3:n-2:3]) + fx[n])
     return resultado
 
 def calcular_integral():
     try:
-        x = sp.symbols('x')
-        funcion = parse_expr(entry_funcion.get())
-    except Exception as e:
-        messagebox.showerror("Error en la función", f"Error al parsear la función: {e}")
-        return
-
-    try:
+        funcion = entry_funcion.get()
         a = float(entry_a.get())
         b = float(entry_b.get())
         n = int(entry_n.get())
@@ -57,9 +47,6 @@ def calcular_integral():
     except ValueError:
         messagebox.showerror("Error", "Límites o subintervalos inválidos.")
         return
-
-    # Calcular el valor exacto de la integral usando SymPy
-    valor_exacto = sp.integrate(funcion, (x, a, b)).evalf()
 
     # Selección
     metodo = metodo_seleccion.get()
@@ -73,14 +60,9 @@ def calcular_integral():
         resultado = metodo_simpson_38(funcion, a, b, n)
 
     if resultado is not None:
-        error = calcular_error(valor_exacto, resultado)
         resultado_var.set(f"Resultado: {resultado:.6f}")
-        error_var.set(f"Error: {error:.6f}")
-        exacto_var.set(f"Valor exacto: {valor_exacto:.6f}")
     else:
         resultado_var.set("Error en el cálculo")
-        error_var.set("")
-        exacto_var.set("")
 
 # Configuración de la interfaz gráfica
 root = tk.Tk()
@@ -89,8 +71,6 @@ root.title("Métodos de Integración Numérica")
 # Variables de selección y resultado
 metodo_seleccion = tk.StringVar(value="Trapezoidal")
 resultado_var = tk.StringVar()
-error_var = tk.StringVar()
-exacto_var = tk.StringVar()
 
 # Etiquetas y Entradas
 tk.Label(root, text="Función f(x):").grid(row=0, column=0, sticky="e")
@@ -123,9 +103,7 @@ tk.Radiobutton(root, text="Simpson 3/8", variable=metodo_seleccion, value="Simps
 tk.Button(root, text="Calcular Integral", command=calcular_integral).grid(row=7, column=0, columnspan=2)
 
 # Resultados
-tk.Label(root, textvariable=exacto_var, fg="blue").grid(row=8, column=0, columnspan=2)
 tk.Label(root, textvariable=resultado_var, fg="green").grid(row=9, column=0, columnspan=2)
-tk.Label(root, textvariable=error_var, fg="red").grid(row=10, column=0, columnspan=2)
 
 # Iniciar la aplicación
 root.mainloop()
